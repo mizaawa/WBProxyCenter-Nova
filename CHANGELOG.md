@@ -55,7 +55,7 @@
 - **改了什么**：Actions 同时导出应用与 Redis 镜像，附安装脚本与 SHA-256；脚本只在指定根目录创建独立的私有子目录。
 - **为什么**：测试服务器不需要 Rust、Node、对 GitHub 或 Docker Hub 的出站访问，也不覆盖现有网站。
 - **影响面**：CI 打包、deploy/install-test.sh 和部署说明；无业务改动。
-- **验证方式**：在 GitHub Runner 临时根目录实际安装，检查 /health 与首次设置状态，并确认 Redis 未映射宿主机端口。
+- **验证方式**：在 GitHub Runner 临时根目录实际安装，检查 /health 与首次设置状态；通过 Docker inspect 同时断言 Redis 的配置和实际端口绑定均为空。
 - **兼容性**：产物仅支持 Linux amd64；已存在同名测试目录或容器时停止，不覆盖旧数据。
 
 ### 2026-11-27 · feat: 文件号池和管理员控制台测试版

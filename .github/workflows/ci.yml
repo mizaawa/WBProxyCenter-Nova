@@ -88,7 +88,9 @@ jobs:
           mkdir -m 700 "$RUNNER_TEMP/wwwroot"
           WBP_WWWROOT="$RUNNER_TEMP/wwwroot" WBP_PUBLISH_ADDR=127.0.0.1 WBP_PUBLISH_PORT=13040 bash install-test.sh "$PWD"
           curl -fsS http://127.0.0.1:13040/api/auth/status | jq -e '.needs_setup == true'
-          test "$(docker compose -p wbpc-nova-test port redis 6379 2>/dev/null || true)" = ""
+          redis_id=$(docker compose -p wbpc-nova-test ps -q redis)
+          test -n "$redis_id"
+          docker inspect "$redis_id" | jq -e 'length == 1 and ((.[0].HostConfig.PortBindings // {}) | length == 0) and ((.[0].NetworkSettings.Ports["6379/tcp"] // []) | length == 0)'
           docker compose -p wbpc-nova-test down
       - uses: actions/upload-artifact@v4
         with:
