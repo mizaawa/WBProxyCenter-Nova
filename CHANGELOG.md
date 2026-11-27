@@ -39,7 +39,7 @@
 - **改了什么**：九个领域库和服务入口、私有运行目录、Redis 版本自检，以及公开的健康和版本接口；推送后在 GitHub Actions 编译并打包 Linux amd64 二进制和 Docker 镜像。
 - **为什么**：用隔离实例验证新服务的启动和构建，不依赖旧 Go 服务或已有账号。
 - **影响面**：workspace、core、store、api、server、Docker Compose、CI 和部署文档。
-- **验证方式**：CI 执行 fmt、clippy、workspace 测试，使用 Redis 7 启动实际二进制并请求 /health 与 /api/version。
+- **验证方式**：CI 执行 fmt、clippy、workspace 测试，使用 Redis 7 启动实际二进制并请求 /health 与 /api/version。GitHub Runner 的 Redis 健康命令参数使用双引号分组。
 - **兼容性**：独立 Redis 和 Docker 卷，不读取或更改旧服务的 state.enc。
 
 ### 2026-11-27 · spec: 完成 Rust 重构框架设计冻结稿
