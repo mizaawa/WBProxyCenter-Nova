@@ -69,6 +69,10 @@ jobs:
           node web/scripts/setup-test.mjs
           node web/scripts/batch-test.mjs
           npm --prefix web test
+      - name: Show sanitized UI status on browser failure
+        if: failure()
+        run: |
+          find web/test-results -name error-context.md -exec grep -E '批次处理完成|后台导入|共 [0-9]+ 个账号|没有匹配的账号|dialog |alert:' {} ';' || true
       - name: Package release binary and ready-to-load Docker image
         run: |
           mkdir -p bundle

@@ -62,8 +62,13 @@ test('文件导入、重复凭证合并及分页', async ({ page }) => {
       mimeType: 'application/json',
       buffer: Buffer.from(JSON.stringify({ items })),
     })
+  const ack = page.waitForResponse(r => r.request().method() === 'POST' && new URL(r.url()).pathname === '/api/accounts/uploads')
   await page.getByRole('button', { name: '开始导入' }).click()
+  expect((await ack).status()).toBe(202)
+  await expect(page.getByRole('dialog')).toHaveCount(0)
+  await expect(page.getByRole('status')).toContainText('批次处理完成：成功 23，失败 0')
   await page.getByLabel('搜索账号').fill(prefix)
+  await expect(page).toHaveURL(new RegExp('q=' + encodeURIComponent(prefix)))
   await expect(page.getByText('共 23 个账号')).toBeVisible()
   await page.getByRole('button', { name: '下一页' }).click()
   await expect(page.locator('.rows li')).toHaveCount(3)
@@ -72,6 +77,7 @@ test('文件导入、重复凭证合并及分页', async ({ page }) => {
     .getByLabel('账号 JSON 或 token')
     .fill(JSON.stringify({ ...items[0], label: prefix + '更新' }))
   await page.getByRole('button', { name: '开始导入' }).click()
+  await expect(page.getByRole('dialog')).toHaveCount(0)
   await expect(page.getByText('共 23 个账号')).toBeVisible()
   await page.getByLabel('搜索账号').fill(prefix + '更新')
   await expect(page.locator('.rows li')).toHaveCount(1)

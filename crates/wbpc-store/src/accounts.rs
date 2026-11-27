@@ -264,6 +264,7 @@ impl Vault {
                 }
                 let mut merged = old.clone();
                 let mut delta = v.clone();
+                fmt::sparse_credentials(&mut delta, &raw);
                 if let Some(obj) = delta.as_object_mut() {
                     for k in [
                         "label",

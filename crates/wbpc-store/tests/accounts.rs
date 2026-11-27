@@ -52,3 +52,23 @@ async fn external_edits_reload_without_redis_and_new_schema_is_rejected() {
     v.rescan().await.unwrap();
     assert_eq!(v.list(&Filter::default()).await.total, 0);
 }
+
+#[tokio::test]
+async fn a_sparse_reimport_does_not_erase_device_or_custom_credential_fields() {
+    let tmp = tempfile::tempdir().unwrap();
+    let v = Vault::open(tmp.path()).await.unwrap();
+    let id=v.import(json!({"label":"原名","enabled":false,"credentials":{"access_token":"old-sample","refresh_token":"sample-r","device_token":"sample-d","expires_at":1500,"future_field":"keep"}}),None).await.unwrap().remove(0);
+    v.import(
+        json!({"accessToken":"new-sample","refreshToken":"sample-r"}),
+        None,
+    )
+    .await
+    .unwrap();
+    let doc = v.export_one(&id).await.unwrap();
+    assert_eq!(doc["label"], "原名");
+    assert_eq!(doc["enabled"], false);
+    assert_eq!(doc["credentials"]["access_token"], "new-sample");
+    assert_eq!(doc["credentials"]["device_token"], "sample-d");
+    assert_eq!(doc["credentials"]["expires_at"], 1500);
+    assert_eq!(doc["credentials"]["future_field"], "keep");
+}

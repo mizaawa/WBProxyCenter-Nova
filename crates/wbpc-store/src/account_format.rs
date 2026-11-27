@@ -25,6 +25,27 @@ pub(crate) fn merge(target: &mut Value, update: Value) {
         *target = update;
     }
 }
+// Defaults are for new files only; absent fields in a sparse reimport mean "keep".
+pub(crate) fn sparse_credentials(delta: &mut Value, raw: &Value) {
+    if let Some(o) = delta["credentials"].as_object_mut() {
+        o.retain(|key, _| {
+            if raw.is_string() {
+                return key == "access_token";
+            }
+            let aliases: &[&str] = match key.as_str() {
+                "access_token" => &["access_token", "accessToken", "token"],
+                "refresh_token" => &["refresh_token", "refreshToken"],
+                "device_token" => &["device_token", "deviceToken"],
+                _ => &[key.as_str()],
+            };
+            aliases.iter().any(|k| {
+                raw.get(k).is_some()
+                    || raw["credentials"].get(k).is_some()
+                    || raw["auth"].get(k).is_some()
+            })
+        });
+    }
+}
 pub(crate) fn fingerprint(v: &Value) -> Result<String, Error> {
     let s = text(
         &v["credentials"],
