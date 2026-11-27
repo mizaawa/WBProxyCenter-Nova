@@ -4,14 +4,21 @@
 
 ## 运行 Actions 构建的测试包
 
-默认分支推送触发 GitHub Actions「Build and test」。在成功的运行中下载 **wbpc-nova-linux-amd64**，解开外层 ZIP 后，把两个文件放到测试目录（Linux x86-64、Docker 和 Compose v2）。该目录不应设成 Nginx/Apache 的静态根。账号和 Redis 单独存放在 Docker 私有卷中，不在可下载的网页目录里。
+默认分支推送触发 GitHub Actions「Build and test」。在成功的运行中下载 **wbpc-nova-linux-amd64**，解开外层 ZIP 后，在解压后的产物目录运行下方安装命令（Linux x86-64、Docker 和 Compose v2、当前用户可写 /www/wwwroot）。脚本创建私有子目录 wbproxycenter-nova-test，验证 SHA-256 后加载两个离线镜像，任何已有的同名目录都会被保留。该目录不应设成 Nginx/Apache 的静态根。账号和 Redis 单独存放在 Docker 私有卷中，不在可下载的网页目录里。
+
+```sh
+# 填入本机的 LAN IPv4 地址（默认回环）；端口默认 13040。
+WBP_PUBLISH_ADDR=<测试服务器的内网IP> bash ./install-test.sh .
+```
+
+也可在自己的私有目录手动启动：
 
 ```sh
 sha256sum -c wbpc-nova-linux-amd64.tar.gz.sha256
 tar -xzf wbpc-nova-linux-amd64.tar.gz
 sha256sum -c SHA256SUMS
 docker load -i wbpc-nova-image.tar.gz
-docker compose up -d
+docker compose up -d --no-build --pull never
 curl -fsS http://127.0.0.1:3040/health
 ```
 

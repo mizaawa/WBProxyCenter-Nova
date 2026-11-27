@@ -73,16 +73,24 @@ jobs:
           mkdir -p bundle
           install -m 0755 target/release/wbpc-server bundle/wbpc-server
           docker build --file deploy/Dockerfile.runtime -t wbpc-nova:test bundle
-          docker save wbpc-nova:test | gzip -1 > bundle/wbpc-nova-image.tar.gz
+          docker save wbpc-nova:test redis:7-alpine | gzip -1 > bundle/wbpc-nova-image.tar.gz
           cp docker-compose.yaml README.md bundle/
           (cd bundle && sha256sum wbpc-server wbpc-nova-image.tar.gz docker-compose.yaml > SHA256SUMS)
           tar -C bundle -czf wbpc-nova-linux-amd64.tar.gz .
           sha256sum wbpc-nova-linux-amd64.tar.gz > wbpc-nova-linux-amd64.tar.gz.sha256
+          install -m 0755 deploy/install-test.sh install-test.sh
+          shellcheck install-test.sh
+          mkdir -m 700 "$RUNNER_TEMP/wwwroot"
+          WBP_WWWROOT="$RUNNER_TEMP/wwwroot" WBP_PUBLISH_ADDR=127.0.0.1 WBP_PUBLISH_PORT=13040 bash install-test.sh "$PWD"
+          curl -fsS http://127.0.0.1:13040/api/auth/status | jq -e '.needs_setup == true'
+          test "$(docker compose -p wbpc-nova-test port redis 6379 2>/dev/null || true)" = ""
+          docker compose -p wbpc-nova-test down
       - uses: actions/upload-artifact@v4
         with:
           name: wbpc-nova-linux-amd64
           path: |
             wbpc-nova-linux-amd64.tar.gz
             wbpc-nova-linux-amd64.tar.gz.sha256
+            install-test.sh
           if-no-files-found: error
           retention-days: 14

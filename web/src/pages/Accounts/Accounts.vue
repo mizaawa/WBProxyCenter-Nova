@@ -1,11 +1,377 @@
 <script setup lang="ts">
-import {computed,onBeforeUnmount,onMounted,ref,watch} from 'vue';import {Plus,Upload,Download,Search,Pencil,Trash2,ChevronLeft,ChevronRight,Inbox,Check,Pause} from 'lucide-vue-next';import AccountDialog from './AccountDialog.vue';import {list,type Account,type Page} from '../../api/endpoints';import {message} from '../../api/client';import {usePolling} from '../../composables/usePolling'
-const params=()=>new URLSearchParams(window.location.search);const q=ref(params().get('q')||''),realm=ref(params().get('realm')||''),page=ref(Math.max(1,Number(params().get('page'))||1)),size=ref(20);const data=ref<Page|null>(null),error=ref(''),notice=ref('');type Mode='import'|'create'|'edit'|'delete'|'export';const mode=ref<Mode|null>(null),selected=ref<Account>();const pages=computed(()=>Math.max(1,Math.ceil((data.value?.total||0)/size.value)));let epoch=0,timer:ReturnType<typeof setTimeout>,announce:ReturnType<typeof setTimeout>
-function query(){const v=new URLSearchParams();if(q.value.trim())v.set('q',q.value.trim());if(realm.value)v.set('realm',realm.value);if(page.value>1)v.set('page',String(page.value));return v}
-async function refresh(){const n=++epoch,params=query();params.set('page_size',String(size.value));try{const r=await list(params);if(n!==epoch)return;data.value=r;error.value='';if(page.value>pages.value)page.value=pages.value}catch(e){if(n===epoch)error.value=message(e)}}
-watch([q,realm],()=>{page.value=1});watch([q,realm,page],()=>{epoch++;const params=query().toString();history.replaceState(null,'',window.location.pathname+(params?'?'+params:''));clearTimeout(timer);timer=setTimeout(()=>void refresh(),180)});function historyChanged(){const p=params();q.value=p.get('q')||'';realm.value=p.get('realm')||'';page.value=Math.max(1,Number(p.get('page'))||1)}onMounted(()=>window.addEventListener('popstate',historyChanged));onBeforeUnmount(()=>{clearTimeout(timer);clearTimeout(announce);window.removeEventListener('popstate',historyChanged);epoch++});usePolling(refresh)
-function open(m:Mode,item?:Account){selected.value=item;mode.value=m}async function saved(text:string){mode.value=null;notice.value=text;clearTimeout(announce);announce=setTimeout(()=>{notice.value=''},4000);await refresh()}
-function date(s:string){const d=new Date(s);return Number.isNaN(d.valueOf())?'未知':new Intl.DateTimeFormat('zh-CN',{dateStyle:'short',timeStyle:'short'}).format(d)}
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import {
+  Plus,
+  Upload,
+  Download,
+  Search,
+  Pencil,
+  Trash2,
+  ChevronLeft,
+  ChevronRight,
+  Inbox,
+  Check,
+  Pause,
+} from 'lucide-vue-next'
+import AccountDialog from './AccountDialog.vue'
+import { list, type Account, type Page } from '../../api/endpoints'
+import { message } from '../../api/client'
+import { usePolling } from '../../composables/usePolling'
+const params = () => new URLSearchParams(window.location.search)
+const q = ref(params().get('q') || ''),
+  realm = ref(params().get('realm') || ''),
+  page = ref(Math.max(1, Number(params().get('page')) || 1)),
+  size = ref(20)
+const data = ref<Page | null>(null),
+  error = ref(''),
+  notice = ref('')
+type Mode = 'import' | 'create' | 'edit' | 'delete' | 'export'
+const mode = ref<Mode | null>(null),
+  selected = ref<Account>()
+const pages = computed(() => Math.max(1, Math.ceil((data.value?.total || 0) / size.value)))
+let epoch = 0,
+  timer: ReturnType<typeof setTimeout>,
+  announce: ReturnType<typeof setTimeout>
+function query() {
+  const v = new URLSearchParams()
+  if (q.value.trim()) v.set('q', q.value.trim())
+  if (realm.value) v.set('realm', realm.value)
+  if (page.value > 1) v.set('page', String(page.value))
+  return v
+}
+async function refresh() {
+  const n = ++epoch,
+    params = query()
+  params.set('page_size', String(size.value))
+  try {
+    const r = await list(params)
+    if (n !== epoch) return
+    data.value = r
+    error.value = ''
+    if (page.value > pages.value) page.value = pages.value
+  } catch (e) {
+    if (n === epoch) error.value = message(e)
+  }
+}
+watch([q, realm], () => {
+  page.value = 1
+})
+watch([q, realm, page], () => {
+  epoch++
+  const params = query().toString()
+  history.replaceState(null, '', window.location.pathname + (params ? '?' + params : ''))
+  clearTimeout(timer)
+  timer = setTimeout(() => void refresh(), 180)
+})
+function historyChanged() {
+  const p = params()
+  q.value = p.get('q') || ''
+  realm.value = p.get('realm') || ''
+  page.value = Math.max(1, Number(p.get('page')) || 1)
+}
+onMounted(() => window.addEventListener('popstate', historyChanged))
+onBeforeUnmount(() => {
+  clearTimeout(timer)
+  clearTimeout(announce)
+  window.removeEventListener('popstate', historyChanged)
+  epoch++
+})
+usePolling(refresh)
+function open(m: Mode, item?: Account) {
+  selected.value = item
+  mode.value = m
+}
+async function saved(text: string) {
+  mode.value = null
+  notice.value = text
+  clearTimeout(announce)
+  announce = setTimeout(() => {
+    notice.value = ''
+  }, 4000)
+  await refresh()
+}
+function date(s: string) {
+  const d = new Date(s)
+  return Number.isNaN(d.valueOf())
+    ? '未知'
+    : new Intl.DateTimeFormat('zh-CN', { dateStyle: 'short', timeStyle: 'short' }).format(d)
+}
 </script>
-<template><header class="page-head"><div><small class="muted">管理控制台 / 账号</small><h1>号池管理</h1></div><div class="actions"><button @click="open('export')"><Download/>导出</button><button @click="open('import')"><Upload/>导入</button><button class="primary" @click="open('create')"><Plus/>新建账号</button></div></header><div class="tools"><div class="segments" role="group" aria-label="号池筛选"><button v-for="part in [{k:'',n:'全部'},{k:'cn',n:'国内版'},{k:'intl',n:'国际版'}]" :key="part.k" :aria-pressed="realm===part.k" @click="realm=part.k">{{part.n}}</button></div><label class="search"><Search :size="18"/><input v-model="q" aria-label="搜索账号" type="search" placeholder="搜索账号名称或 ID"/></label></div><p v-if="error" class="error" role="alert">{{error}}<button @click="refresh">重试</button></p><div v-if="!data&&!error" aria-busy="true" aria-label="正在加载账号"><div v-for="n in 4" :key="n" class="skeleton"/></div><template v-if="data"><div class="row-head columns"><span>账号</span><span>号池</span><span>状态</span><span>最近更新</span><span class="align-right">操作</span></div><div v-if="!data.items.length" class="empty"><Inbox :size="32"/><h2>{{q||realm?'没有匹配的账号':'暂无账号'}}</h2><button v-if="q||realm" @click="q='';realm=''">清除筛选</button><button v-else @click="open('import')"><Upload/>导入账号</button></div><ul v-else class="rows"><li v-for="a in data.items" :key="a.id" class="columns"><div class="identity"><strong>{{a.label}}</strong><code>{{a.id}}</code></div><span class="realm">{{a.realm==='cn'?'国内版':'国际版'}}</span><div class="state"><span class="chip">未探测</span><small class="inline"><Check v-if="a.enabled" :size="14"/><Pause v-else :size="14"/>{{a.enabled?'已启用':'已停用'}}</small></div><time class="mtime" :datetime="a.updated_at">{{date(a.updated_at)}}</time><div class="actions end"><button class="icon" title="编辑账号" :aria-label="'编辑 '+a.label" @click="open('edit',a)"><Pencil/></button><button class="icon" title="删除账号" :aria-label="'删除 '+a.label" @click="open('delete',a)"><Trash2/></button></div></li></ul><footer class="pager"><small>共 {{data.total}} 个账号</small><div class="actions"><button class="icon" title="上一页" aria-label="上一页" :disabled="page<=1" @click="page--"><ChevronLeft/></button><span>{{page}} / {{pages}}</span><button class="icon" title="下一页" aria-label="下一页" :disabled="page>=pages" @click="page++"><ChevronRight/></button></div></footer></template><div v-if="notice" role="status" class="toast">{{notice}}</div><AccountDialog v-if="mode" :mode="mode" :item="selected" :realm-filter="realm" :query="q" @close="mode=null" @saved="saved"/></template>
-<style scoped>.page-head,.tools,.pager{display:flex;align-items:center;justify-content:space-between;gap:var(--space-4);flex-wrap:wrap}.page-head{margin-bottom:var(--space-6)}.page-head h1{margin-top:var(--space-1)}.tools{padding:var(--space-4) 0;border-top:1px solid var(--md-outline-variant)}.segments{display:inline-flex;border:1px solid var(--md-outline-variant);border-radius:var(--shape-full);overflow:hidden}.segments button{min-height:36px;border:none;border-radius:0;background:transparent}.segments button[aria-pressed=true]{background:var(--md-secondary-container);color:var(--md-on-secondary-container)}.search{position:relative;display:block;width:min(100%,290px)}.search svg{position:absolute;left:var(--space-3);top:var(--space-3);color:var(--md-on-surface-variant)}.search input{padding-left:var(--space-10);min-height:40px}.columns{display:grid;grid-template-columns:minmax(160px,2fr) minmax(64px,.65fr) minmax(95px,.8fr) minmax(100px,1fr) 90px;gap:var(--space-3);align-items:center;padding:var(--space-3) var(--space-4)}.row-head{background:var(--md-surface-container);color:var(--md-on-surface-variant);min-height:48px;border-radius:var(--shape-sm);font-size:12px}.rows{padding:0;margin:0;list-style:none}.rows li{min-height:64px;border-bottom:1px solid var(--md-outline-variant)}.identity,.state{display:grid;gap:var(--space-1);min-width:0}.identity strong{overflow-wrap:anywhere}.identity code,.mtime{color:var(--md-on-surface-variant)}.state{justify-items:start}.align-right{text-align:right}.empty{display:grid;justify-items:center;align-content:center;gap:var(--space-4);min-height:240px}.empty>svg{color:var(--md-on-surface-variant)}.pager{padding:var(--space-3) var(--space-4);border-top:1px solid var(--md-outline-variant)}.toast{position:fixed;bottom:var(--space-6);left:50%;transform:translateX(-50%);background:var(--md-inverse-surface);color:var(--md-inverse-on-surface);padding:var(--space-3) var(--space-6);border-radius:var(--shape-sm)}@media(max-width:904px){.columns{grid-template-columns:minmax(0,1fr) auto;padding:var(--space-3) 0}.row-head,.mtime{display:none}.identity{grid-column:1;grid-row:1}.columns>.actions{grid-column:2;grid-row:1}.state{grid-column:2;grid-row:2;display:flex;align-items:center}.realm{grid-column:1;grid-row:2}.tools{align-items:stretch}.search{width:100%}.state small svg{width:14px}}</style>
+<template>
+  <header class="page-head">
+    <div>
+      <small class="muted">管理控制台 / 账号</small>
+      <h1>号池管理</h1>
+    </div>
+    <div class="actions">
+      <button @click="open('export')"><Download />导出</button
+      ><button @click="open('import')"><Upload />导入</button
+      ><button class="primary" @click="open('create')"><Plus />新建账号</button>
+    </div>
+  </header>
+  <div class="tools">
+    <div class="segments" role="group" aria-label="号池筛选">
+      <button
+        v-for="part in [
+          { k: '', n: '全部' },
+          { k: 'cn', n: '国内版' },
+          { k: 'intl', n: '国际版' },
+        ]"
+        :key="part.k"
+        :aria-pressed="realm === part.k"
+        @click="realm = part.k"
+      >
+        {{ part.n }}
+      </button>
+    </div>
+    <label class="search"
+      ><Search :size="18" /><input
+        v-model="q"
+        aria-label="搜索账号"
+        type="search"
+        placeholder="搜索账号名称或 ID"
+    /></label>
+  </div>
+  <p v-if="error" class="error" role="alert">{{ error }}<button @click="refresh">重试</button></p>
+  <div v-if="!data && !error" aria-busy="true" aria-label="正在加载账号">
+    <div v-for="n in 4" :key="n" class="skeleton" />
+  </div>
+  <template v-if="data"
+    ><div class="row-head columns">
+      <span>账号</span><span>号池</span><span>状态</span><span>最近更新</span
+      ><span class="align-right">操作</span>
+    </div>
+    <div v-if="!data.items.length" class="empty">
+      <Inbox :size="32" />
+      <h2>{{ q || realm ? '没有匹配的账号' : '暂无账号' }}</h2>
+      <button
+        v-if="q || realm"
+        @click="
+          q = ''
+          realm = ''
+        "
+      >
+        清除筛选</button
+      ><button v-else @click="open('import')"><Upload />导入账号</button>
+    </div>
+    <ul v-else class="rows">
+      <li v-for="a in data.items" :key="a.id" class="columns">
+        <div class="identity">
+          <strong>{{ a.label }}</strong
+          ><code>{{ a.id }}</code>
+        </div>
+        <span class="realm">{{ a.realm === 'cn' ? '国内版' : '国际版' }}</span>
+        <div class="state">
+          <span class="chip">未探测</span
+          ><small class="inline"
+            ><Check v-if="a.enabled" :size="14" /><Pause v-else :size="14" />{{
+              a.enabled ? '已启用' : '已停用'
+            }}</small
+          >
+        </div>
+        <time class="mtime" :datetime="a.updated_at">{{ date(a.updated_at) }}</time>
+        <div class="actions end">
+          <button
+            class="icon"
+            title="编辑账号"
+            :aria-label="'编辑 ' + a.label"
+            @click="open('edit', a)"
+          >
+            <Pencil /></button
+          ><button
+            class="icon"
+            title="删除账号"
+            :aria-label="'删除 ' + a.label"
+            @click="open('delete', a)"
+          >
+            <Trash2 />
+          </button>
+        </div>
+      </li>
+    </ul>
+    <footer class="pager">
+      <small>共 {{ data.total }} 个账号</small>
+      <div class="actions">
+        <button class="icon" title="上一页" aria-label="上一页" :disabled="page <= 1" @click="page--">
+          <ChevronLeft /></button
+        ><span>{{ page }} / {{ pages }}</span
+        ><button
+          class="icon"
+          title="下一页"
+          aria-label="下一页"
+          :disabled="page >= pages"
+          @click="page++"
+        >
+          <ChevronRight />
+        </button>
+      </div></footer
+  ></template>
+  <div v-if="notice" role="status" class="toast">{{ notice }}</div>
+  <AccountDialog
+    v-if="mode"
+    :mode="mode"
+    :item="selected"
+    :realm-filter="realm"
+    :query="q"
+    @close="mode = null"
+    @saved="saved"
+  />
+</template>
+<style scoped>
+.page-head,
+.tools,
+.pager {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  flex-wrap: wrap;
+}
+.page-head {
+  margin-bottom: var(--space-6);
+}
+.page-head h1 {
+  margin-top: var(--space-1);
+}
+.tools {
+  padding: var(--space-4) 0;
+  border-top: 1px solid var(--md-outline-variant);
+}
+.segments {
+  display: inline-flex;
+  border: 1px solid var(--md-outline-variant);
+  border-radius: var(--shape-full);
+  overflow: hidden;
+}
+.segments button {
+  min-height: 36px;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+}
+.segments button[aria-pressed='true'] {
+  background: var(--md-secondary-container);
+  color: var(--md-on-secondary-container);
+}
+.search {
+  position: relative;
+  display: block;
+  width: min(100%, 290px);
+}
+.search svg {
+  position: absolute;
+  left: var(--space-3);
+  top: var(--space-3);
+  color: var(--md-on-surface-variant);
+}
+.search input {
+  padding-left: var(--space-10);
+  min-height: 40px;
+}
+.columns {
+  display: grid;
+  grid-template-columns: minmax(160px, 2fr) minmax(64px, 0.65fr) minmax(95px, 0.8fr) minmax(
+      100px,
+      1fr
+    ) 90px;
+  gap: var(--space-3);
+  align-items: center;
+  padding: var(--space-3) var(--space-4);
+}
+.row-head {
+  background: var(--md-surface-container);
+  color: var(--md-on-surface-variant);
+  min-height: 48px;
+  border-radius: var(--shape-sm);
+  font-size: 12px;
+}
+.rows {
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+.rows li {
+  min-height: 64px;
+  border-bottom: 1px solid var(--md-outline-variant);
+}
+.identity,
+.state {
+  display: grid;
+  gap: var(--space-1);
+  min-width: 0;
+}
+.identity strong {
+  overflow-wrap: anywhere;
+}
+.identity code,
+.mtime {
+  color: var(--md-on-surface-variant);
+}
+.state {
+  justify-items: start;
+}
+.align-right {
+  text-align: right;
+}
+.empty {
+  display: grid;
+  justify-items: center;
+  align-content: center;
+  gap: var(--space-4);
+  min-height: 240px;
+}
+.empty > svg {
+  color: var(--md-on-surface-variant);
+}
+.pager {
+  padding: var(--space-3) var(--space-4);
+  border-top: 1px solid var(--md-outline-variant);
+}
+.toast {
+  position: fixed;
+  bottom: var(--space-6);
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--md-inverse-surface);
+  color: var(--md-inverse-on-surface);
+  padding: var(--space-3) var(--space-6);
+  border-radius: var(--shape-sm);
+}
+@media (max-width: 904px) {
+  .columns {
+    grid-template-columns: minmax(0, 1fr) auto;
+    padding: var(--space-3) 0;
+  }
+  .row-head,
+  .mtime {
+    display: none;
+  }
+  .identity {
+    grid-column: 1;
+    grid-row: 1;
+  }
+  .columns > .actions {
+    grid-column: 2;
+    grid-row: 1;
+  }
+  .state {
+    grid-column: 2;
+    grid-row: 2;
+    display: flex;
+    align-items: center;
+  }
+  .realm {
+    grid-column: 1;
+    grid-row: 2;
+  }
+  .tools {
+    align-items: stretch;
+  }
+  .search {
+    width: 100%;
+  }
+  .state small svg {
+    width: 14px;
+  }
+}
+</style>

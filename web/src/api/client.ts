@@ -1,5 +1,50 @@
-export class HttpError extends Error {constructor(readonly status:number,message:string){super(message)}}
-async function execute(path:string,method='GET',body?:unknown){let response:Response;try{response=await fetch(path,{method,credentials:'same-origin',cache:'no-store',headers:body===undefined?{}:{'Content-Type':'application/json'},body:body===undefined?undefined:JSON.stringify(body)})}catch{throw new HttpError(0,'无法连接服务，请检查网络')}if(!response.ok){const detail:unknown=await response.json().catch(()=>null);const msg=typeof detail==='object'&&detail!==null&&'message' in detail&&typeof detail.message==='string'?detail.message:'请求未完成';if(response.status===401&&!path.startsWith('/api/auth/'))window.dispatchEvent(new Event('wbp-unauthenticated'));throw new HttpError(response.status,msg)}return response}
-export async function request<T>(path:string,method='GET',body?:unknown):Promise<T>{return (await execute(path,method,body)).json() as Promise<T>}
-export async function download(body:unknown){const r=await execute('/api/accounts/export','POST',body);const blob=await r.blob();return {blob,name:r.headers.get('Content-Type')?.includes('application/zip')?'accounts.zip':'accounts.json'}}
-export function message(error:unknown){return error instanceof Error?error.message:'请求失败'}
+export class HttpError extends Error {
+  constructor(
+    readonly status: number,
+    message: string,
+  ) {
+    super(message)
+  }
+}
+async function execute(path: string, method = 'GET', body?: unknown) {
+  let response: Response
+  try {
+    response = await fetch(path, {
+      method,
+      credentials: 'same-origin',
+      cache: 'no-store',
+      headers: body === undefined ? {} : { 'Content-Type': 'application/json' },
+      body: body === undefined ? undefined : JSON.stringify(body),
+    })
+  } catch {
+    throw new HttpError(0, '无法连接服务，请检查网络')
+  }
+  if (!response.ok) {
+    const detail: unknown = await response.json().catch(() => null)
+    const msg =
+      typeof detail === 'object' &&
+      detail !== null &&
+      'message' in detail &&
+      typeof detail.message === 'string'
+        ? detail.message
+        : '请求未完成'
+    if (response.status === 401 && !path.startsWith('/api/auth/'))
+      window.dispatchEvent(new Event('wbp-unauthenticated'))
+    throw new HttpError(response.status, msg)
+  }
+  return response
+}
+export async function request<T>(path: string, method = 'GET', body?: unknown): Promise<T> {
+  return (await execute(path, method, body)).json() as Promise<T>
+}
+export async function download(body: unknown) {
+  const r = await execute('/api/accounts/export', 'POST', body)
+  const blob = await r.blob()
+  return {
+    blob,
+    name: r.headers.get('Content-Type')?.includes('application/zip') ? 'accounts.zip' : 'accounts.json',
+  }
+}
+export function message(error: unknown) {
+  return error instanceof Error ? error.message : '请求失败'
+}

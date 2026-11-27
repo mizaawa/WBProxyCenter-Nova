@@ -79,7 +79,7 @@ impl Sessions {
             .acquire()
             .await
             .map_err(|_| Error::Invalid("服务正在停止"))?;
-        Ok(task::spawn_blocking(move || bcrypt::verify(password, digest)).await??)
+        Ok(task::spawn_blocking(move || bcrypt::verify(password, &digest)).await??)
     }
     /// 只有客户端保留随机 cookie 原文。Redis 只存摘要和过期时间。
     pub async fn issue(&self, ip: IpAddr) -> Result<String, Error> {
