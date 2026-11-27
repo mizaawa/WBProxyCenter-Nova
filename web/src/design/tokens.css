@@ -1,0 +1,143 @@
+:root {
+  --md-primary: #0062F3;
+  --md-on-primary: #FFFFFF;
+  --md-primary-container: #E1E0FF;
+  --md-on-primary-container: #001C51;
+
+  --md-secondary: #545C86;
+  --md-on-secondary: #FFFFFF;
+  --md-secondary-container: #DEE1FF;
+  --md-on-secondary-container: #0E1E42;
+
+  --md-tertiary: #00788C;
+  --md-on-tertiary: #FFFFFF;
+  --md-tertiary-container: #ABEDFF;
+  --md-on-tertiary-container: #00242B;
+
+  --md-error: #B32537;
+  --md-on-error: #FFFFFF;
+  --md-error-container: #FFDAD8;
+  --md-on-error-container: #480009;
+
+  --md-surface: #FCFCFF;
+  --md-on-surface: #1F1F25;
+  --md-on-surface-variant: #454556;
+  --md-surface-dim: #DCDCE4;
+  --md-surface-container-lowest: #FFFFFF;
+  --md-surface-container-low: #F6F6FD;
+  --md-surface-container: #F0F0F8;
+  --md-surface-container-high: #EBEAF2;
+  --md-surface-container-highest: #E5E5EC;
+
+  --md-outline: #767588;
+  --md-outline-variant: #C5C5D9;
+  --md-inverse-surface: #303036;
+  --md-inverse-on-surface: #F0F0F8;
+  --md-inverse-primary: #C1C1FF;
+}
+
+[data-theme="dark"] {
+  --md-primary: #C1C1FF;
+  --md-on-primary: #002B74;
+  --md-primary-container: #003FA3;
+  --md-on-primary-container: #E1E0FF;
+
+  --md-secondary: #BDC4F4;
+  --md-on-secondary: #232E55;
+  --md-secondary-container: #3B446D;
+  --md-on-secondary-container: #DEE1FF;
+
+  --md-tertiary: #00D9FD;
+  --md-on-tertiary: #003640;
+  --md-tertiary-container: #004E5C;
+  --md-on-tertiary-container: #ABEDFF;
+
+  --md-error: #FFB3B0;
+  --md-on-error: #680016;
+  --md-error-container: #920023;
+  --md-on-error-container: #FFDAD8;
+
+  --md-surface: #131318;
+  --md-on-surface: #E2E2E9;
+  --md-on-surface-variant: #C5C5D9;
+  --md-surface-dim: #131318;
+  --md-surface-container-lowest: #0E0D14;
+  --md-surface-container-low: #1B1B20;
+  --md-surface-container: #1F1F25;
+  --md-surface-container-high: #2A292F;
+  --md-surface-container-highest: #34343A;
+
+  --md-outline: #908FA2;
+  --md-outline-variant: #454556;
+  --md-inverse-surface: #E2E2E9;
+  --md-inverse-on-surface: #303036;
+  --md-inverse-primary: #0062F3;
+}
+
+:root {
+  --status-ok: #14804A;        --status-ok-soft: #E3F6EC;
+  --status-warn: #8A5A00;      --status-warn-soft: #FFF1D6;
+  --status-danger: var(--md-error);  --status-danger-soft: var(--md-error-container);
+  --status-idle: #5B5B6B;      --status-idle-soft: #EEEEF4;
+  --status-avoid: #6B3FA0;     --status-avoid-soft: #F0E9FB;   /* 回避，紫色 */
+
+  --realm-cn: #C4561D;         --realm-cn-soft: #FFF0E6;       /* 国内，橙 */
+  --realm-intl: #5B3FD4;       --realm-intl-soft: #F1EDFF;     /* 国际，紫 */
+}
+
+:root {
+  --chart-request:  #0062F3;   /* 请求数 */
+  --chart-tokens:   #7C3AED;   /* 输出 Token */
+  --chart-tokens-in:#0891B2;   /* 输入 Token */
+  --chart-cache:    #14804A;   /* 缓存 / 可用积分 */
+  --chart-cost:     #B45309;   /* 费用 */
+  --chart-credit:   #C2410C;   /* 已消耗积分 */
+  --chart-error:    #B32537;   /* 失败 */
+  --chart-latency:  #6D28D9;   /* 延迟 */
+}
+
+:root {
+--state-hover:    color-mix(in srgb, currentColor 8%, transparent);
+--state-focus:    color-mix(in srgb, currentColor 10%, transparent);
+--state-pressed:  color-mix(in srgb, currentColor 10%, transparent);
+--state-dragged:  color-mix(in srgb, currentColor 16%, transparent);
+}
+
+:root {
+  --font-display: "Outfit Variable", "HarmonyOS Sans SC", "MiSans", "PingFang SC",
+                  "Microsoft YaHei UI", "Noto Sans SC", sans-serif;
+  --font-text:    "HarmonyOS Sans SC", "MiSans", "PingFang SC",
+                  "Microsoft YaHei UI", "Noto Sans SC", system-ui, sans-serif;
+  --font-mono:    "JetBrains Mono", "Cascadia Code", "SF Mono", Menlo, monospace;
+}
+
+:root {
+--shape-xs:   4px;    /* 徽标、小 chip */
+--shape-sm:   8px;    /* 输入框、按钮 */
+--shape-md:  12px;    /* 卡片、列表项 */
+--shape-lg:  16px;    /* 大卡片、面板 */
+--shape-xl:  28px;    /* 对话框 */
+--shape-full: 999px;  /* 胶囊、头像、开关 */
+}
+
+:root {
+--space-1:  4px;   --space-2:  8px;   --space-3: 12px;
+--space-4: 16px;   --space-5: 20px;   --space-6: 24px;
+--space-8: 32px;   --space-10: 40px;  --space-12: 48px;
+}
+
+:root {
+  /* MD3 缓动曲线 */
+  --ease-standard:            cubic-bezier(0.2, 0, 0, 1);
+  --ease-standard-decelerate: cubic-bezier(0, 0, 0, 1);
+  --ease-standard-accelerate: cubic-bezier(0.3, 0, 1, 1);
+  --ease-emphasized:          cubic-bezier(0.2, 0, 0, 1);
+  --ease-emphasized-decelerate: cubic-bezier(0.05, 0.7, 0.1, 1);
+  --ease-emphasized-accelerate: cubic-bezier(0.3, 0, 0.8, 0.15);
+  --ease-linear:             linear;
+
+  /* 时长 */
+  --dur-short1: 50ms;   --dur-short2: 100ms;  --dur-short3: 150ms;  --dur-short4: 200ms;
+  --dur-med1: 250ms;    --dur-med2: 300ms;    --dur-med3: 350ms;    --dur-med4: 400ms;
+  --dur-long1: 450ms;   --dur-long2: 500ms;   --dur-long3: 550ms;   --dur-long4: 600ms;
+}

@@ -33,15 +33,28 @@ jobs:
           key: nova-linux-rust185-${{ hashFiles('Cargo.lock') }}-${{ github.sha }}
           restore-keys: |
             nova-linux-rust185-${{ hashFiles('Cargo.lock') }}-
+            nova-linux-rust185-
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - name: Build console and install Chromium
+        working-directory: web
+        run: |
+          npm ci --no-audit --no-fund
+          npm run lint:colors
+          npm run build
+          npx playwright install --with-deps chromium
       - name: Install pinned CI toolchain
         run: rustup toolchain install 1.85.1 --profile minimal --component clippy,rustfmt
       - name: Check and test
         run: |
           cargo +1.85.1 fmt --all -- --check
-          cargo +1.85.1 clippy --workspace --locked --all-targets -- -D warnings
-          cargo +1.85.1 test --workspace --locked
-          cargo +1.85.1 build --release --locked -p wbpc-server
-      - name: Verify binary with real Redis
+          cargo +1.85.1 clippy --workspace --locked --all-features --all-targets -- -D warnings
+          cargo +1.85.1 test --workspace --locked --all-features
+          cargo +1.85.1 build --release --locked -p wbpc-server --features web-ui
+      - name: Verify binary, auth and browser workflows with real Redis
         env:
           WBP_DATA_DIR: ${{ runner.temp }}/nova/data
           WBP_ACCESS_DIR: ${{ runner.temp }}/nova/accounts
@@ -52,6 +65,9 @@ jobs:
           trap 'kill "$pid" 2>/dev/null || true' EXIT
           curl --noproxy '*' --retry 20 --retry-connrefused --retry-delay 1 -fsS http://127.0.0.1:3040/health | jq -e '.status == "ok"'
           curl -fsS http://127.0.0.1:3040/api/version | jq -e '.version != ""'
+          export WBP_E2E_URL=http://127.0.0.1:3040 WBP_E2E_PASSWORD="$(openssl rand -hex 24)"
+          node web/scripts/setup-test.mjs
+          npm --prefix web test
       - name: Package release binary and ready-to-load Docker image
         run: |
           mkdir -p bundle

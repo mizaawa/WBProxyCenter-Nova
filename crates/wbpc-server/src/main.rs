@@ -21,16 +21,40 @@ async fn main() -> Result<()> {
     let db = Runtime::connect(cfg.redis_url.as_str()).await?;
     db.initialize(wbpc_api::VERSION, &cfg.addr.to_string())
         .await?;
+    let vault = wbpc_store::accounts::Vault::open(&cfg.access_dir).await?;
+    let sessions = wbpc_store::session::Sessions::new(db.clone());
+    let code = wbpc_store::session::Sessions::setup_code();
+    if !sessions.configured().await? {
+        if let Some(p) = cfg.admin_password {
+            sessions.initialize(p).await?;
+        } else {
+            tracing::info!(setup_code=%code,"首次设置验证码，仅提供给管理员");
+        }
+    }
+    let app = wbpc_api::App::new(
+        db,
+        vault.clone(),
+        sessions,
+        code,
+        cfg.secure_cookie,
+        cfg.data_dir.join("staging"),
+    );
+    let (stop, rx) = tokio::sync::watch::channel(false);
+    let worker = tokio::spawn(async move {
+        vault.watch(rx).await;
+    });
     let listener = TcpListener::bind(cfg.addr)
         .await
         .context("监听地址不可用")?;
     tracing::info!(addr=%listener.local_addr()?,version=wbpc_api::VERSION,"服务已启动");
     axum::serve(
         listener,
-        wbpc_api::router(db).into_make_service_with_connect_info::<std::net::SocketAddr>(),
+        wbpc_api::router(app).into_make_service_with_connect_info::<std::net::SocketAddr>(),
     )
     .with_graceful_shutdown(shutdown())
     .await?;
+    let _ = stop.send(true);
+    worker.await?;
     Ok(())
 }
 async fn initialize_dirs(data: &Path, access: &Path) -> Result<()> {

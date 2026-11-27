@@ -15,3 +15,10 @@ thiserror.workspace = true
 url.workspace = true
 tokio.workspace = true
 tracing.workspace = true
+futures.workspace = true
+tempfile.workspace = true
+zip.workspace = true
+include_dir = { workspace = true, optional = true }
+
+[features]
+web-ui = ["dep:include_dir"]
