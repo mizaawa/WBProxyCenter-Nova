@@ -47,7 +47,7 @@ impl Runtime {
             .find_map(|s| s.strip_prefix("redis_version:"))
             .and_then(|v| v.split('.').next())
             .and_then(|v| v.parse::<u32>().ok());
-        if !major.is_some_and(|v| v >= 7) {
+        if major.is_none_or(|v| v < 7) {
             return Err(Error::Schema);
         }
         let schema = self.key("meta:schema");
