@@ -13,8 +13,9 @@ async function execute(path: string, method = 'GET', body?: unknown) {
       method,
       credentials: 'same-origin',
       cache: 'no-store',
-      headers: body === undefined ? {} : { 'Content-Type': 'application/json' },
-      body: body === undefined ? undefined : JSON.stringify(body),
+      headers:
+        body === undefined || body instanceof FormData ? {} : { 'Content-Type': 'application/json' },
+      body: body instanceof FormData ? body : body === undefined ? undefined : JSON.stringify(body),
     })
   } catch {
     throw new HttpError(0, '无法连接服务，请检查网络')

@@ -2,6 +2,8 @@ use thiserror::Error;
 /// 存储错误只在服务端保留诊断信息；凭证与连接串不进入响应。
 #[derive(Debug, Error)]
 pub enum Error {
+    #[error("上传队列已满")]
+    Busy,
     #[error("Redis 操作失败")]
     Redis(#[from] redis::RedisError),
     #[error("文件操作失败")]

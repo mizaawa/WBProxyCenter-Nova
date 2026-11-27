@@ -14,9 +14,15 @@ import {
   Pause,
 } from 'lucide-vue-next'
 import AccountDialog from './AccountDialog.vue'
-import { list, type Account, type Page } from '../../api/endpoints'
+import { list, receipt, type Account, type Page } from '../../api/endpoints'
 import { message } from '../../api/client'
 import { usePolling } from '../../composables/usePolling'
+const batch = ref(sessionStorage.getItem('wbp-batch') || ''),
+  batchText = ref('')
+function clearFilters() {
+  q.value = ''
+  realm.value = ''
+}
 const params = () => new URLSearchParams(window.location.search)
 const q = ref(params().get('q') || ''),
   realm = ref(params().get('realm') || ''),
@@ -77,6 +83,37 @@ onBeforeUnmount(() => {
   epoch++
 })
 usePolling(refresh)
+async function updateReceipt() {
+  const id = batch.value
+  if (!id) return
+  try {
+    const r = await receipt(id)
+    if (batch.value !== id) return
+    batchText.value =
+      r.status === 'processing'
+        ? '正在后台导入：已处理 ' + r.imported + ' 个账号'
+        : '批次处理完成：成功 ' +
+          r.imported +
+          '，失败 ' +
+          r.failed +
+          (r.errors.length ? '。' + r.errors[0] : '')
+    if (r.status !== 'processing') {
+      batch.value = ''
+      sessionStorage.removeItem('wbp-batch')
+      await refresh()
+    }
+  } catch (e) {
+    batchText.value = message(e)
+  }
+}
+function accepted(id: string) {
+  mode.value = null
+  batch.value = id
+  sessionStorage.setItem('wbp-batch', id)
+  batchText.value = '上传已接收，正在后台导入'
+  void updateReceipt()
+}
+usePolling(updateReceipt, 1200)
 function open(m: Mode, item?: Account) {
   selected.value = item
   mode.value = m
@@ -132,6 +169,7 @@ function date(s: string) {
         placeholder="搜索账号名称或 ID"
     /></label>
   </div>
+  <p v-if="batchText" role="status" class="muted">{{ batchText }}</p>
   <p v-if="error" class="error" role="alert">{{ error }}<button @click="refresh">重试</button></p>
   <div v-if="!data && !error" aria-busy="true" aria-label="正在加载账号">
     <div v-for="n in 4" :key="n" class="skeleton" />
@@ -144,14 +182,7 @@ function date(s: string) {
     <div v-if="!data.items.length" class="empty">
       <Inbox :size="32" />
       <h2>{{ q || realm ? '没有匹配的账号' : '暂无账号' }}</h2>
-      <button
-        v-if="q || realm"
-        @click="
-          q = ''
-          realm = ''
-        "
-      >
-        清除筛选</button
+      <button v-if="q || realm" @click="clearFilters">清除筛选</button
       ><button v-else @click="open('import')"><Upload />导入账号</button>
     </div>
     <ul v-else class="rows">
@@ -215,6 +246,7 @@ function date(s: string) {
     :query="q"
     @close="mode = null"
     @saved="saved"
+    @batch="accepted"
   />
 </template>
 <style scoped>
@@ -270,10 +302,9 @@ function date(s: string) {
 }
 .columns {
   display: grid;
-  grid-template-columns: minmax(160px, 2fr) minmax(64px, 0.65fr) minmax(95px, 0.8fr) minmax(
-      100px,
-      1fr
-    ) 90px;
+  grid-template-columns:
+    minmax(160px, 2fr) minmax(64px, 0.65fr) minmax(95px, 0.8fr) minmax(100px, 1fr)
+    90px;
   gap: var(--space-3);
   align-items: center;
   padding: var(--space-3) var(--space-4);

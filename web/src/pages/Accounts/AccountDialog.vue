@@ -2,11 +2,11 @@
 import { computed, onMounted, ref } from 'vue'
 import { Download, Upload, Save, Trash2 } from 'lucide-vue-next'
 import Modal from '../../components/Modal.vue'
-import { detail, importAccounts, remove, update, type Account } from '../../api/endpoints'
+import { detail, importAccounts, remove, update, upload, type Account } from '../../api/endpoints'
 import { download, message } from '../../api/client'
 type Mode = 'import' | 'create' | 'edit' | 'delete' | 'export'
 const props = defineProps<{ mode: Mode; item?: Account; query: string; realmFilter: string }>()
-const emit = defineEmits<{ close: []; saved: [text: string] }>()
+const emit = defineEmits<{ close: []; saved: [text: string]; batch: [id: string] }>()
 const labels: Record<Mode, string> = {
   import: '导入账号',
   create: '新建账号',
@@ -15,6 +15,7 @@ const labels: Record<Mode, string> = {
   export: '导出账号',
 }
 const title = computed(() => labels[props.mode])
+const files = ref<File[]>([])
 const payload = ref(''),
   realm = ref(props.mode === 'create' ? 'cn' : ''),
   label = ref(props.item?.label || ''),
@@ -38,20 +39,9 @@ onMounted(async () => {
     }
   }
 })
-async function picked(e: Event) {
-  const el = e.target as HTMLInputElement
-  const file = el.files?.[0]
-  if (!file) return
-  if (file.size > 8 * 1024 * 1024) {
-    error.value = '每次直接导入最多 8 MiB'
-    return
-  }
-  try {
-    payload.value = await file.text()
-    error.value = ''
-  } catch {
-    error.value = '读取文件失败'
-  }
+function picked(e: Event) {
+  files.value = Array.from((e.target as HTMLInputElement).files || [])
+  error.value = ''
 }
 async function submit() {
   busy.value = true
@@ -59,6 +49,11 @@ async function submit() {
   try {
     switch (props.mode) {
       case 'import': {
+        if (files.value.length) {
+          const { batch_id } = await upload(files.value, realm.value)
+          emit('batch', batch_id)
+          break
+        }
         let data: unknown
         const s = payload.value.trim()
         if (!s) throw Error('请输入账号 JSON 或 token')
@@ -126,6 +121,7 @@ async function submit() {
         ><label
           >选择文件<input
             type="file"
+            multiple
             accept=".json,application/json,text/plain"
             @change="picked" /></label
         ><label
@@ -134,7 +130,8 @@ async function submit() {
             class="mono"
             autocomplete="off"
             spellcheck="false"
-            required
+            :disabled="files.length > 0"
+            :required="!files.length"
           /></label></template
       ><label v-if="mode === 'import' || mode === 'create'"
         >所属号池<select v-model="realm">

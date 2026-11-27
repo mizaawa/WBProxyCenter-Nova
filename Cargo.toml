@@ -14,7 +14,7 @@ wbpc-core = { path = "crates/wbpc-core" }
 wbpc-store = { path = "crates/wbpc-store" }
 wbpc-api = { path = "crates/wbpc-api" }
 tokio = { version = "1", features = ["full"] }
-axum = { version = "0.8", features = ["macros"] }
+axum = { version = "0.8", features = ["macros", "multipart"] }
 tower = { version = "0.5", features = ["util"] }
 redis = { version = "0.27", features = ["tokio-comp", "connection-manager", "script"] }
 ulid = { version = "1", features = ["serde"] }

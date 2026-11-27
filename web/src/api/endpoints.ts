@@ -33,3 +33,23 @@ export const importAccounts = (body: unknown, realm: string) =>
     'POST',
     body,
   )
+
+export type Receipt = {
+  id: string
+  status: 'processing' | 'failed' | 'completed'
+  uploaded: number
+  imported: number
+  failed: number
+  errors: string[]
+}
+export function upload(files: File[], realm: string) {
+  const form = new FormData()
+  for (const file of files) form.append('document', file)
+  return request<{ batch_id: string }>(
+    '/api/accounts/uploads?realm=' + encodeURIComponent(realm || 'auto'),
+    'POST',
+    form,
+  )
+}
+export const receipt = (id: string) =>
+  request<Receipt>('/api/accounts/uploads/' + encodeURIComponent(id))

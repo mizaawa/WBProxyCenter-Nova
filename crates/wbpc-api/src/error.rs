@@ -41,6 +41,11 @@ impl From<Error> for ApiError {
     fn from(e: Error) -> Self {
         match e {
             Error::Invalid(s) => Self::input(s),
+            Error::Busy => Self(
+                StatusCode::TOO_MANY_REQUESTS,
+                "rate_limit_error",
+                "上传队列已满，请稍后重试",
+            ),
             Error::NotFound => Self(StatusCode::NOT_FOUND, "not_found", "找不到此账号"),
             Error::Conflict => Self(StatusCode::CONFLICT, "conflict", "数据已变化，请刷新后重试"),
             _ => {

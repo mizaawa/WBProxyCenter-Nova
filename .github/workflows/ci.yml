@@ -67,6 +67,7 @@ jobs:
           curl -fsS http://127.0.0.1:3040/api/version | jq -e '.version != ""'
           export WBP_E2E_URL=http://127.0.0.1:3040 WBP_E2E_PASSWORD="$(openssl rand -hex 24)"
           node web/scripts/setup-test.mjs
+          node web/scripts/batch-test.mjs
           npm --prefix web test
       - name: Package release binary and ready-to-load Docker image
         run: |

@@ -13,6 +13,7 @@ mod assets;
 mod auth;
 mod error;
 mod export;
+mod uploads;
 use axum::{extract::DefaultBodyLimit, routing::post};
 use serde_json::json;
 use std::{path::PathBuf, sync::Arc};
@@ -22,6 +23,7 @@ use wbpc_store::{accounts::Vault, session::Sessions};
 pub struct App {
     db: Runtime,
     vault: Vault,
+    uploads: wbpc_store::uploads::Uploads,
     sessions: Sessions,
     setup_code: Arc<String>,
     secure: bool,
@@ -35,15 +37,18 @@ impl App {
         sessions: Sessions,
         setup_code: String,
         secure: bool,
-        staging: PathBuf,
+        data: PathBuf,
     ) -> Self {
+        let uploads =
+            wbpc_store::uploads::Uploads::new(db.clone(), vault.clone(), data.join("inbox"));
         Self {
+            uploads,
             db,
             vault,
             sessions,
             setup_code: Arc::new(setup_code),
             secure,
-            staging: Arc::new(staging),
+            staging: Arc::new(data.join("staging")),
         }
     }
 }
@@ -91,6 +96,11 @@ pub fn router(a: App) -> Router {
     let secured = Router::new()
         .route("/api/accounts", get(accounts::list).post(accounts::import))
         .route("/api/accounts/import", post(accounts::import))
+        .route(
+            "/api/accounts/uploads",
+            post(uploads::accept).layer(DefaultBodyLimit::max(257 * 1024 * 1024)),
+        )
+        .route("/api/accounts/uploads/{id}", get(uploads::status))
         .route("/api/accounts/export", post(export::download))
         .route(
             "/api/accounts/{id}",

@@ -37,7 +37,7 @@ async fn main() -> Result<()> {
         sessions,
         code,
         cfg.secure_cookie,
-        cfg.data_dir.join("staging"),
+        cfg.data_dir.clone(),
     );
     let (stop, rx) = tokio::sync::watch::channel(false);
     let worker = tokio::spawn(async move {
