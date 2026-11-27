@@ -13,11 +13,7 @@ impl ApiError {
         Self(StatusCode::UNAUTHORIZED, "authentication_error", "请先登录")
     }
     pub fn forbidden() -> Self {
-        Self(
-            StatusCode::FORBIDDEN,
-            "forbidden",
-            "拒绝跨站请求或验证码不正确",
-        )
+        Self(StatusCode::FORBIDDEN, "forbidden", "拒绝跨站请求")
     }
     pub fn input(msg: &'static str) -> Self {
         Self(StatusCode::BAD_REQUEST, "invalid_request_error", msg)

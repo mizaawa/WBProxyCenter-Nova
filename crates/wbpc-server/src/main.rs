@@ -23,19 +23,17 @@ async fn main() -> Result<()> {
         .await?;
     let vault = wbpc_store::accounts::Vault::open(&cfg.access_dir).await?;
     let sessions = wbpc_store::session::Sessions::new(db.clone());
-    let code = wbpc_store::session::Sessions::setup_code();
     if !sessions.configured().await? {
         if let Some(p) = cfg.admin_password {
             sessions.initialize(p).await?;
         } else {
-            tracing::info!(setup_code=%code,"首次设置验证码，仅提供给管理员");
+            tracing::info!("尚未设置管理员密钥，请先在可信网络中完成首次设置");
         }
     }
     let app = wbpc_api::App::new(
         db,
         vault.clone(),
         sessions,
-        code,
         cfg.secure_cookie,
         cfg.data_dir.clone(),
     );

@@ -25,10 +25,6 @@ impl Sessions {
             workers: Arc::new(Semaphore::new(4)),
         }
     }
-    /// 一次性设置码仅在无管理员时由服务进程生成并显示在私有日志。
-    pub fn setup_code() -> String {
-        random_secret()
-    }
     /// 管理员哈希与其他设置共享 hash，但不进入状态接口。
     pub async fn configured(&self) -> Result<bool, Error> {
         Ok(redis::cmd("HEXISTS")
@@ -40,7 +36,7 @@ impl Sessions {
     /// 只允许首个初始化者提交，重启后不覆盖管理员密码。
     pub async fn initialize(&self, password: String) -> Result<(), Error> {
         if password.chars().count() < 10 || password.len() > 72 {
-            return Err(Error::Invalid("密码至少 10 个字符，最多 72 字节"));
+            return Err(Error::Invalid("管理员密钥至少 10 个字符，最多 72 字节"));
         }
         let _permit = self
             .workers

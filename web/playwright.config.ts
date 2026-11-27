@@ -1,6 +1,10 @@
 import { defineConfig } from '@playwright/test'
 export default defineConfig({
   testDir: 'tests',
+  projects: [
+    { name: 'first-visit', testMatch: '**/first-visit.setup.ts' },
+    { name: 'console', testMatch: '**/*.spec.ts', dependencies: ['first-visit'] },
+  ],
   workers: 1,
   timeout: 30000,
   reporter: 'list',

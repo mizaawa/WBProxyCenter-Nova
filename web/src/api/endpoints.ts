@@ -2,7 +2,6 @@ import { request } from './client'
 export type Session = {
   authenticated: boolean
   needs_setup: boolean
-  setup_code_required: boolean
   site_name: string
   version: string
 }
@@ -18,8 +17,9 @@ export type Account = {
 }
 export type Page = { items: Account[]; total: number; page: number; page_size: number }
 export const status = () => request<Session>('/api/auth/status')
-export const authenticate = (setup: boolean, password: string, setup_code?: string) =>
-  request('/api/auth/' + (setup ? 'setup' : 'login'), 'POST', { password, setup_code })
+export const setupAdmin = (password: string, password_confirm: string) =>
+  request('/api/auth/setup', 'POST', { password, password_confirm })
+export const login = (password: string) => request('/api/auth/login', 'POST', { password })
 export const logout = () => request('/api/auth/logout', 'POST')
 export const health = () => request<{ status: string; version: string }>('/health')
 export const list = (filters: URLSearchParams) => request<Page>('/api/accounts?' + filters)

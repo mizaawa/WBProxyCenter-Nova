@@ -24,17 +24,6 @@ fn cookie(h: &HeaderMap) -> &str {
 fn authority(h: &HeaderMap) -> Option<Authority> {
     h.get(header::HOST)?.to_str().ok()?.parse().ok()
 }
-fn local(peer: SocketAddr, h: &HeaderMap) -> bool {
-    peer.ip().is_loopback()
-        && !h.contains_key("forwarded")
-        && !h.contains_key("x-forwarded-for")
-        && !h.contains_key("x-forwarded-host")
-        && authority(h).is_some_and(|a| {
-            let name = a.host().trim_matches(['[', ']']);
-            name.eq_ignore_ascii_case("localhost")
-                || name.parse::<IpAddr>().is_ok_and(|i| i.is_loopback())
-        })
-}
 pub(crate) async fn origin(
     State(app): State<App>,
     req: Request,
@@ -85,26 +74,28 @@ async fn success(app: &App, ip: IpAddr) -> Result<Response, ApiError> {
         .insert(header::SET_COOKIE, set_cookie(app, &token, true)?);
     Ok(r)
 }
-pub(crate) async fn status(
-    State(a): State<App>,
-    ConnectInfo(peer): ConnectInfo<SocketAddr>,
-    h: HeaderMap,
-) -> Result<Json<Value>, ApiError> {
-    let needs = !a.sessions.configured().await?;
-    Ok(Json(
-        json!({"authenticated":a.sessions.is_valid(cookie(&h)).await?,"needs_setup":needs,"setup_code_required":needs&&!local(peer,&h),"version":VERSION,"site_name":"WBProxy Center"}),
-    ))
+pub(crate) async fn status(State(a): State<App>, h: HeaderMap) -> Result<Json<Value>, ApiError> {
+    Ok(Json(json!({
+        "authenticated": a.sessions.is_valid(cookie(&h)).await?,
+        "needs_setup": !a.sessions.configured().await?,
+        "setup_code_required": false, // Kept for status clients predating the two-field form.
+        "version": VERSION,
+        "site_name": "WBProxy Center"
+    })))
 }
 #[derive(Deserialize)]
 pub(crate) struct Password {
     password: String,
-    setup_code: Option<String>,
+}
+#[derive(Deserialize)]
+pub(crate) struct SetupPassword {
+    password: String,
+    password_confirm: String,
 }
 pub(crate) async fn setup(
     State(a): State<App>,
     ConnectInfo(peer): ConnectInfo<SocketAddr>,
-    h: HeaderMap,
-    Input(p): Input<Password>,
+    Input(p): Input<SetupPassword>,
 ) -> Result<Response, ApiError> {
     if a.sessions.configured().await? {
         return Err(wbpc_store::Error::Conflict.into());
@@ -112,8 +103,8 @@ pub(crate) async fn setup(
     if !a.sessions.reserve_attempt(peer.ip()).await? {
         return Err(ApiError::limited());
     }
-    if !local(peer, &h) && p.setup_code.as_deref() != Some(a.setup_code.as_str()) {
-        return Err(ApiError::forbidden());
+    if p.password != p.password_confirm {
+        return Err(ApiError::input("两次输入的管理员密钥不一致"));
     }
     a.sessions.initialize(p.password).await?;
     success(&a, peer.ip()).await
@@ -130,7 +121,7 @@ pub(crate) async fn login(
         return Err(ApiError(
             StatusCode::UNAUTHORIZED,
             "authentication_error",
-            "密码错误",
+            "管理员密钥错误",
         ));
     }
     success(&a, peer.ip()).await

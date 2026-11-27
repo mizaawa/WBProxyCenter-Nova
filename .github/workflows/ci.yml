@@ -66,9 +66,8 @@ jobs:
           curl --noproxy '*' --retry 20 --retry-connrefused --retry-delay 1 -fsS http://127.0.0.1:3040/health | jq -e '.status == "ok"'
           curl -fsS http://127.0.0.1:3040/api/version | jq -e '.version != ""'
           export WBP_E2E_URL=http://127.0.0.1:3040 WBP_E2E_PASSWORD="$(openssl rand -hex 24)"
-          node web/scripts/setup-test.mjs
-          node web/scripts/batch-test.mjs
           npm --prefix web test
+          node web/scripts/batch-test.mjs
       - name: Show sanitized UI status on browser failure
         if: failure()
         run: |
@@ -88,6 +87,7 @@ jobs:
           mkdir -m 700 "$RUNNER_TEMP/wwwroot"
           WBP_WWWROOT="$RUNNER_TEMP/wwwroot" WBP_PUBLISH_ADDR=127.0.0.1 WBP_PUBLISH_PORT=13040 bash install-test.sh "$PWD"
           curl -fsS http://127.0.0.1:13040/api/auth/status | jq -e '.needs_setup == true'
+          WBP_E2E_URL=http://127.0.0.1:13040 WBP_E2E_PASSWORD="$(openssl rand -hex 24)" node web/scripts/setup-test.mjs
           redis_id=$(docker compose -p wbpc-nova-test ps -q redis)
           test -n "$redis_id"
           docker inspect "$redis_id" | jq -e 'length == 1 and ((.[0].HostConfig.PortBindings // {}) | length == 0) and ((.[0].NetworkSettings.Ports["6379/tcp"] // []) | length == 0)'

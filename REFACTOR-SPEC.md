@@ -1830,10 +1830,8 @@ fx_rate    f64   结算时使用的 USD→CNY 汇率
 
 ### 12.1 首次启动与登录
 
-1. 启动时若没设密码：
-   - 生成一次性「首次设置验证码」，打印在启动日志里
-   - 从**非本机**访问时要求填写该验证码；本机访问不需要
-2. 设置密码：**至少 10 个字符**，bcrypt 存哈希
+1. 未初始化时，首页直接显示「管理员密钥」和「确认管理员密钥」两个密码输入框。回环、内网、Docker 和反向代理使用相同流程，不需要用户名或验证码，启动日志不生成密钥。首次开站应限制访问，仅让管理员能到达未初始化实例。
+2. 两次输入必须完全一致，密钥**至少 10 个字符、最多 72 个 UTF-8 字节**。只允许一次原子初始化，bcrypt 存哈希；成功后直接建立会话。已初始化实例不再提供设置表单，后续登录只输入一次管理员密钥。
 3. 登录失败计数按 IP，5 分钟内超过 10 次返回 429
 4. 会话：`wbp_session` Cookie，`HttpOnly` + `SameSite=Strict` + `Secure`（TLS 时），24 小时
 5. 安全入口（`security_path`）：设了之后控制台只能从 `/<入口>` 打开；`/api` 与 `/v1` 不受影响。入口**不能代替密码**
@@ -2127,8 +2125,8 @@ Redis `wbp:settings` 的字段。**一项都不许漏**，漏了功能就丢。
 
 | 方法 | 路径 | 说明 |
 | --- | --- | --- |
-| GET | `/api/auth/status` | `{ authenticated, needs_setup, setup_code_required, version, site_name }` |
-| POST | `/api/auth/setup` | `{ password, setup_code? }`，密码 ≥ 10 |
+| GET | `/api/auth/status` | `{ authenticated, needs_setup, setup_code_required, version, site_name }`；`setup_code_required` 仅为兼容旧客户端保留，恒为 `false` |
+| POST | `/api/auth/setup` | `{ password, password_confirm }`，两字段必填且相同；长度见 §12.1。不一致返回 400，已设置返回 409，成功时签发会话 Cookie |
 | POST | `/api/auth/login` | `{ password, security_path? }` |
 | POST | `/api/auth/logout` | — |
 | GET | `/api/version` | `{ version }`（公开） |

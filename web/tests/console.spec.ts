@@ -3,7 +3,11 @@ import { readFile } from 'node:fs/promises'
 import { randomUUID } from 'node:crypto'
 async function login(page: Page) {
   await page.goto('/')
-  await page.getByLabel('管理员密码').fill(process.env.WBP_E2E_PASSWORD!)
+  await expect(page.getByRole('heading', { name: '管理员登录' })).toBeVisible()
+  await expect(page.locator('form input')).toHaveCount(1)
+  const key = page.getByLabel('管理员密钥', { exact: true })
+  await expect(key).toHaveAttribute('autocomplete', 'current-password')
+  await key.fill(process.env.WBP_E2E_PASSWORD!)
   await page.getByRole('button', { name: '登录', exact: true }).click()
   await expect(page.getByRole('heading', { name: '号池管理' })).toBeVisible()
 }

@@ -25,20 +25,12 @@ pub struct App {
     vault: Vault,
     uploads: wbpc_store::uploads::Uploads,
     sessions: Sessions,
-    setup_code: Arc<String>,
     secure: bool,
     staging: Arc<PathBuf>,
 }
 impl App {
-    /// 日志读取一次性验证码后，只能用它完成首次管理员初始化。
-    pub fn new(
-        db: Runtime,
-        vault: Vault,
-        sessions: Sessions,
-        setup_code: String,
-        secure: bool,
-        data: PathBuf,
-    ) -> Self {
+    /// 共用会话仓储，确保各管理路由看到相同的初始化状态。
+    pub fn new(db: Runtime, vault: Vault, sessions: Sessions, secure: bool, data: PathBuf) -> Self {
         let uploads =
             wbpc_store::uploads::Uploads::new(db.clone(), vault.clone(), data.join("inbox"));
         Self {
@@ -46,7 +38,6 @@ impl App {
             db,
             vault,
             sessions,
-            setup_code: Arc::new(setup_code),
             secure,
             staging: Arc::new(data.join("staging")),
         }
