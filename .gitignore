@@ -1,0 +1,12 @@
+/target/
+/node_modules/
+/web/node_modules/
+/web/dist/
+/web/test-results/
+/web/playwright-report/
+/data/
+/access_account/*
+!/access_account/.gitkeep
+/.env
+/.local/
+*.log

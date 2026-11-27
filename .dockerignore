@@ -1,0 +1,15 @@
+*
+!Cargo.toml
+!Cargo.lock
+!.cargo
+!.cargo/config.toml
+!crates
+!crates/**
+!web
+!web/**
+web/node_modules
+web/dist
+web/test-results
+web/playwright-report
+!deploy
+!deploy/Dockerfile.runtime

@@ -1,0 +1,10 @@
+[package]
+name = "wbpc-core"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+publish.workspace = true
+
+[dependencies]
+url.workspace = true
+thiserror.workspace = true
